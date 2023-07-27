@@ -5,11 +5,16 @@ import java.awt.*
 import java.awt.image.BufferedImage
 import javax.swing.JFrame
 import javax.swing.JPanel
+import kotlin.system.measureTimeMillis
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
+import kotlin.system.*
 
 
 class GamePanel : JPanel(), Runnable {
     //Screen settings
     var originalTileSize = 16
+    var countDraw = 1
     var animCount = 0
     var scale = 3
     var FPS = 60
@@ -31,12 +36,12 @@ class GamePanel : JPanel(), Runnable {
     //     default player pos
 
     init {
-        this.setBackground(Color.BLACK)
-        this.setDoubleBuffered(true)
+        this.background = Color.BLACK
+        this.isDoubleBuffered = true
         this.addKeyListener(keyH)
-        this.setFocusable(true)
+        this.isFocusable = true
         setFullScreen()
-        this.setPreferredSize(Dimension(screenWidth2, screenHeight2))
+        this.preferredSize = Dimension(screenWidth2, screenHeight2)
     }
 
 
@@ -45,7 +50,7 @@ class GamePanel : JPanel(), Runnable {
         val screenSize = Toolkit.getDefaultToolkit().screenSize
         val width = screenSize.getWidth()
         val height = screenSize.getHeight()
-        Main.frameObject.frame.setExtendedState(JFrame.MAXIMIZED_BOTH)
+        Main.frameObject.frame.extendedState = JFrame.MAXIMIZED_BOTH
         screenWidth2 = width.toInt()
         screenHeight2 = height.toInt()
         //offset factor to be used by mouse listener or mouse motion listener if you are using cursor in your game. Multiply your e.getX()e.getY() by this.
@@ -63,62 +68,74 @@ class GamePanel : JPanel(), Runnable {
         drawLevelScreen()
 
     }
-    // run the game loop
-     override fun run() {
+        // run the game loop
+    override fun run() {
         setUpGame()
-        var currentTime : Long
-        val drawInterval = 1000000000/FPS
+        var currentTime: Long
+        val drawInterval = 1000000000 / FPS
         var lastTime: Long = System.nanoTime()
         var drawCount = 0
         var timer: Long = 0
         while (gameThread != null) {
             currentTime = System.nanoTime()
-
             if (currentTime - lastTime >= drawInterval) {
-                 update()
-//                println("updated")
+                update()
                 timer += (currentTime - lastTime)
                 lastTime = System.nanoTime()
                 drawToTempScreen()
-                drawToScreen()
-                g2.clearRect(0,0,screenWidth2, screenHeight2)
-//                repaint()
+            //    if (countDraw == 1) {
+              //      countDraw = 0
+                    drawToScreen()
+
+          //      }
+                g2.clearRect(0, 0, screenWidth2, screenHeight2)
+
 
                 if (drawCount % 10 == 0) {
 
-                    if (animCount+1 == 4){
+                    if (animCount + 1 == 4) {
                         animCount = 0
-                    }
-                    else{
+                    } else {
                         animCount += 1
                     }
                 }
                 drawCount++
 
-           }
+            }
 
-           if(timer >= 1000000000){
-               println("FPS: $drawCount")
-               animCount = 0
-               drawCount = 0
-               timer = 0
-           }
+            if (timer >= 1000000000) {
+                println("FPS: $drawCount")
+                /*println("count draw: $countDraw")
+                countDraw = 0*/
+                animCount = 0
+                drawCount = 0
+                timer = 0
+            }
         }
+    }
 
-        }
-         private fun update() {
+    private fun update() {
             player.update()
         }
-        fun drawToScreen(){
-            var g: Graphics = getGraphics()
-//            g.drawImage(levelScreen, 0, 0, screenWidth2, screenHeight2, null)
-            g.drawImage(tempScreen, 0, 0, screenWidth2, screenHeight2, null)
-            g.dispose()
-        }
+         fun drawToScreen(){
+//            val executor = Executors.newSingleThreadExecutor()
+          //  return CompletableFuture.supplyAsync {
+                val g: Graphics = getGraphics()
+                val g2: Graphics2D = g as Graphics2D
+          /*      g.drawImage(levelScreen, 0, 0, screenWidth2, screenHeight2, null)
+                player.draw(g2)*/
+                g.drawImage(tempScreen, 0, 0, screenWidth2, screenHeight2, null)
+                g.dispose()
+                countDraw = 1
+
+          //  }
+         }
+//    : CompletableFuture<Unit>
         fun drawToTempScreen(){
             if (g2 != null) {
                 g2.drawImage(levelScreen, 0, 0, screenWidth, screenHeight, null)
                 player.draw(g2)
+//                g2.drawImage(player.draw(g2), player.x, player.y, tileSize, tileSize, null)
 
             }
 
