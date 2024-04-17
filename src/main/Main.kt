@@ -10,12 +10,12 @@ object Main {
     @JvmStatic
       fun main(args: Array<String>) {
         frame = JFrame("2d game")
-        var gamePanel = GamePanel()
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+        val gamePanel = GamePanel()
+        frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
         frame.setLocationRelativeTo(null)
-        frame.setVisible(true)
-        frame.setTitle("2d")
-        frame.setResizable(false)
+        frame.isVisible = true
+        frame.title = "2d"
+        frame.isResizable = false
         frame.add(gamePanel)
         frame.pack()
 

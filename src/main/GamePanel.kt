@@ -1,27 +1,24 @@
 package main
 
+import entity.BasicMonster
 import entity.Player
 import java.awt.*
 import java.awt.image.BufferedImage
 import javax.swing.JFrame
 import javax.swing.JPanel
-import kotlin.system.measureTimeMillis
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
-import kotlin.system.*
 
 
 class GamePanel : JPanel(), Runnable {
     //Screen settings
-    var originalTileSize = 16
-    var countDraw = 1
+    private var originalTileSize = 16
+    private var countDraw = 1
     var animCount = 0
     var scale = 3
-    var FPS = 60
+    private var FPS = 60
     var tileSize = originalTileSize * scale
-    var tm = TileManager(this)
+    private var tm = TileManager(this)
     var gameThread = Thread()
-    var screenWidth = tm.maxScreenCol * tileSize // 768
+    private var screenWidth = tm.maxScreenCol * tileSize // 768
     var screenHeight = tm.maxScreenRow * tileSize // 576 TO CHANGE????
     // Full screen
     var screenWidth2 = screenWidth
@@ -32,6 +29,7 @@ class GamePanel : JPanel(), Runnable {
     lateinit var LevelG2: Graphics2D
     var keyH = KeyHandler()
     var player = Player(this, keyH, tm)
+    var bm = BasicMonster(player, tm, this)
     var fullScreenOffsetFactor = 0f
     //     default player pos
 
@@ -60,7 +58,7 @@ class GamePanel : JPanel(), Runnable {
         gameThread = Thread(this)
         gameThread.start()
     }
-    fun setUpGame(){
+    private fun setUpGame(){
         tempScreen = BufferedImage(screenWidth, screenHeight, BufferedImage.TYPE_INT_ARGB)
         levelScreen = BufferedImage(screenWidth, screenHeight, BufferedImage.TYPE_INT_ARGB)
         g2 = tempScreen!!.graphics as Graphics2D
@@ -83,12 +81,11 @@ class GamePanel : JPanel(), Runnable {
                 timer += (currentTime - lastTime)
                 lastTime = System.nanoTime()
                 drawToTempScreen()
-            //    if (countDraw == 1) {
-              //      countDraw = 0
-                    drawToScreen()
-
-          //      }
-                g2.clearRect(0, 0, screenWidth2, screenHeight2)
+               /* if (countDraw == 1) {
+                    countDraw = 0*/
+                drawToScreen()
+//                }
+//                g2.clearRect(0, 0, screenWidth2, screenHeight2)
 
 
                 if (drawCount % 10 == 0) {
@@ -107,6 +104,7 @@ class GamePanel : JPanel(), Runnable {
                 println("FPS: $drawCount")
                 /*println("count draw: $countDraw")
                 countDraw = 0*/
+                bm.pathfind()
                 animCount = 0
                 drawCount = 0
                 timer = 0
@@ -115,36 +113,38 @@ class GamePanel : JPanel(), Runnable {
     }
 
     private fun update() {
-            player.update()
-        }
-         fun drawToScreen(){
-//            val executor = Executors.newSingleThreadExecutor()
-          //  return CompletableFuture.supplyAsync {
-                val g: Graphics = getGraphics()
-                val g2: Graphics2D = g as Graphics2D
-          /*      g.drawImage(levelScreen, 0, 0, screenWidth2, screenHeight2, null)
-                player.draw(g2)*/
-                g.drawImage(tempScreen, 0, 0, screenWidth2, screenHeight2, null)
-                g.dispose()
-                countDraw = 1
+        player.update()
 
-          //  }
-         }
+    }
+     private fun drawToScreen(){
+//            val executor = Executors.newSingleThreadExecutor()
+      //  return CompletableFuture.supplyAsync {
+            val g: Graphics = graphics
+            val g2: Graphics2D = g as Graphics2D
+      /*      g.drawImage(levelScreen, 0, 0, screenWidth2, screenHeight2, null)
+            player.draw(g2)*/
+            g.drawImage(tempScreen, 0, 0, screenWidth2, screenHeight2, null)
+            g.dispose()
+            countDraw = 1
+
+      //  }
+     }
 //    : CompletableFuture<Unit>
-        fun drawToTempScreen(){
-            if (g2 != null) {
-                g2.drawImage(levelScreen, 0, 0, screenWidth, screenHeight, null)
-                player.draw(g2)
+    private fun drawToTempScreen(){
+        if (g2 != null) {
+            g2.drawImage(levelScreen, 0, 0, screenWidth, screenHeight, null)
+            bm.draw(g2)
+            player.draw(g2)
 //                g2.drawImage(player.draw(g2), player.x, player.y, tileSize, tileSize, null)
 
-            }
+        }
 
+    }
+    private fun drawLevelScreen(){
+        if (LevelG2 != null){
+            tm.drawMatrix(LevelG2)
         }
-        fun drawLevelScreen(){
-            if (LevelG2 != null){
-                tm.drawMatrix(LevelG2)
-            }
-        }
+    }
 /*        public override fun paintComponent(g: Graphics) {
             super.paintComponent(g)
             val g2 = g as? Graphics2D

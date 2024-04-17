@@ -5,26 +5,25 @@ import main.TileManager
 
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
-import java.io.IOException
 import javax.imageio.ImageIO
 
 class Player(private var gp: GamePanel, private var keyH: KeyHandler, private var tm: TileManager) : Entity() {
 
-    private var animList = arrayOf("playChar0", "playChar1", "playChar2", "playChar3")
-    private var imageList: Array<BufferedImage?> = arrayOf(null, null, null, null)
+    override var animList: List<String> = listOf("playChar0", "playChar1", "playChar2", "playChar3")
     private var yTilePos = 0
     private var xTilePos = 0
-    private var tileX: Array<Int> = arrayOf(0 , 1)
-    private var tileY: Array<Int> = arrayOf(7, 8)
+    var tileX: Array<Int> = arrayOf(0 , 1)
+    var tileY: Array<Int> = arrayOf(7, 8)
+    override var source = "player"
     init {
         setDefaultValues()
-        initPlayerImages()
+        super.initImages()
     }
-        private fun initPlayerImages(){
+        /*private fun initPlayerImages(){
             for (i in 0..3){
                 imageList[i] = ImageIO.read(javaClass.classLoader.getResourceAsStream("player/${this.animList[i]}.png"))
             }
-        }
+        }*/
      private fun setDefaultValues(){
         x = 0
         y = 432-48
