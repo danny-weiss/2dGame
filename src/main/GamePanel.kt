@@ -1,6 +1,5 @@
 package main
 
-import entity.BasicMonster
 import entity.Player
 import java.awt.*
 import java.awt.image.BufferedImage
@@ -10,27 +9,36 @@ import javax.swing.JPanel
 
 class GamePanel : JPanel(), Runnable {
     //Screen settings
+    private lateinit var g: Graphics
+    private lateinit var g2: Graphics2D
+    private lateinit var gui: GameUserInterface
+    private var lastDashTime = 0
+    var winClock = 0
+    var timeSeconds = 0
+    var currentTitle = "PixelDash"
+    var monsterNumber = 1
     private var originalTileSize = 16
-    private var countDraw = 1
     var animCount = 0
+    var gameState = 0 //Show UI
     var scale = 3
     private var FPS = 60
     var tileSize = originalTileSize * scale
     private var tm = TileManager(this)
-    var gameThread = Thread()
-    private var screenWidth = tm.maxScreenCol * tileSize // 768
-    var screenHeight = tm.maxScreenRow * tileSize // 576 TO CHANGE????
+    private var gameThread = Thread()
+    private val screenWidth = tm.maxScreenCol * tileSize // 768
+    private val screenHeight = tm.maxScreenRow * tileSize // 576 TO CHANGE????
     // Full screen
     var screenWidth2 = screenWidth
-    var screenHeight2 = screenHeight
-    var tempScreen: BufferedImage? = null
-    lateinit var g2: Graphics2D
-    lateinit var levelScreen: BufferedImage
-    lateinit var LevelG2: Graphics2D
-    var keyH = KeyHandler()
-    var player = Player(this, keyH, tm)
-    var bm = BasicMonster(player, tm, this)
-    var fullScreenOffsetFactor = 0f
+    private var screenHeight2 = screenHeight
+    private lateinit var tempScreen: BufferedImage
+    private lateinit var levelScreen: BufferedImage
+    private lateinit var levelG2: Graphics2D
+    private lateinit var tempG2: Graphics2D
+    private var keyH = KeyHandler(this)
+    var updateUI = true
+    private var player = Player(this, keyH, tm)
+    private var monsterHandler = MonsterHandler()
+    private var fullScreenOffsetFactor = 0f
     //     default player pos
 
     init {
@@ -44,7 +52,7 @@ class GamePanel : JPanel(), Runnable {
 
 
     // Game Thread code
-    fun setFullScreen(){
+    private fun setFullScreen(){
         val screenSize = Toolkit.getDefaultToolkit().screenSize
         val width = screenSize.getWidth()
         val height = screenSize.getHeight()
@@ -59,11 +67,16 @@ class GamePanel : JPanel(), Runnable {
         gameThread.start()
     }
     private fun setUpGame(){
+        g = graphics
+        g2 = g as Graphics2D
+        gui = GameUserInterface(g2, keyH, this, g)
         tempScreen = BufferedImage(screenWidth, screenHeight, BufferedImage.TYPE_INT_ARGB)
         levelScreen = BufferedImage(screenWidth, screenHeight, BufferedImage.TYPE_INT_ARGB)
-        g2 = tempScreen!!.graphics as Graphics2D
-        LevelG2 = levelScreen.graphics as Graphics2D
+        tempG2 = tempScreen.graphics as Graphics2D
+        levelG2 = levelScreen.graphics as Graphics2D
         drawLevelScreen()
+        monsterHandler.spawnMonsters(monsterNumber, player, tm, this)
+        monsterHandler.pathfind()
 
     }
         // run the game loop
@@ -77,19 +90,18 @@ class GamePanel : JPanel(), Runnable {
         while (gameThread != null) {
             currentTime = System.nanoTime()
             if (currentTime - lastTime >= drawInterval) {
-                update()
                 timer += (currentTime - lastTime)
                 lastTime = System.nanoTime()
-                drawToTempScreen()
-               /* if (countDraw == 1) {
-                    countDraw = 0*/
-                drawToScreen()
-//                }
-//                g2.clearRect(0, 0, screenWidth2, screenHeight2)
-
-
+                update()
+                if(gameState == 1) {
+                    drawToScreen()
+                    drawToTempScreen()
+                }
+                else if(gameState == 0 && updateUI){
+                    gui.drawTitle(currentTitle)
+                    updateUI = false
+                }
                 if (drawCount % 10 == 0) {
-
                     if (animCount + 1 == 4) {
                         animCount = 0
                     } else {
@@ -102,47 +114,80 @@ class GamePanel : JPanel(), Runnable {
 
             if (timer >= 1000000000) {
                 println("FPS: $drawCount")
-                /*println("count draw: $countDraw")
-                countDraw = 0*/
-                bm.pathfind()
                 animCount = 0
                 drawCount = 0
+                winClockHandler()
+                timeSeconds +=1
                 timer = 0
             }
         }
     }
-
+    private fun winClockHandler(){
+        if(winClock  > 0){
+            winClock -= 1
+            if(winClock == 0){
+                win()
+            }
+        }
+    }
     private fun update() {
-        player.update()
-
+        if(gameState == 1) {
+            player.update()
+            monsterHandler.update()
+        }
     }
      private fun drawToScreen(){
 //            val executor = Executors.newSingleThreadExecutor()
       //  return CompletableFuture.supplyAsync {
-            val g: Graphics = graphics
-            val g2: Graphics2D = g as Graphics2D
       /*      g.drawImage(levelScreen, 0, 0, screenWidth2, screenHeight2, null)
             player.draw(g2)*/
-            g.drawImage(tempScreen, 0, 0, screenWidth2, screenHeight2, null)
-            g.dispose()
-            countDraw = 1
-
+            val drawG = graphics
+            drawG.drawImage(tempScreen, 0, 0, screenWidth2, screenHeight2, null)
+            drawG.dispose()
       //  }
      }
-//    : CompletableFuture<Unit>
     private fun drawToTempScreen(){
         if (g2 != null) {
-            g2.drawImage(levelScreen, 0, 0, screenWidth, screenHeight, null)
-            bm.draw(g2)
-            player.draw(g2)
+            tempG2.drawImage(levelScreen, 0, 0, screenWidth, screenHeight, null)
+            monsterHandler.draw(tempG2)
+            player.draw(tempG2)
 //                g2.drawImage(player.draw(g2), player.x, player.y, tileSize, tileSize, null)
-
         }
 
     }
+    fun playerDash(){
+        if(lastDashTime < timeSeconds - 2) {
+            player.dash = true
+        }
+    }
+    private fun newGame(){
+        player.setDefaultValues()
+        monsterHandler.reset()
+        tm.initGameMatrix()
+        monsterHandler.spawnMonsters(monsterNumber, player, tm, this)
+        drawLevelScreen()
+        gameState = 1
+    }
+    fun selectHighlight(){
+        if(gui.highlightedTextIndex == 0){
+            newGame()
+        }
+        else{
+            println("HighLighter")
+        }
+    }
+    fun win(){
+        currentTitle = "Victory"
+        gameState = 0
+        monsterNumber += 1
+    }
+    fun lose(){
+        currentTitle = "Defeat"
+        gameState = 0
+    }
     private fun drawLevelScreen(){
-        if (LevelG2 != null){
-            tm.drawMatrix(LevelG2)
+        if (levelG2 != null){
+            tm.drawMatrix(levelG2)
         }
     }
 /*        public override fun paintComponent(g: Graphics) {

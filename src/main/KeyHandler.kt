@@ -5,22 +5,52 @@ import java.awt.event.KeyListener
 
 
 
-class KeyHandler : KeyListener {
-    //    var codeMap = mutableMapOf<Int, Int>()
-
-    private val codeMap: Map<Int, Int> = mapOf(87 to 0, 65 to 1, 83 to 2, 68 to 3)
+class KeyHandler(private val gp: GamePanel) : KeyListener {
+    var uiPos = 0
     var arrayDecoder = arrayOf(false, false, false, false)
-     override fun keyTyped(e: KeyEvent?) { /*useless but needed */}
+     override fun keyTyped(e: KeyEvent) { /* useless but need */}
 
      override fun keyPressed(e: KeyEvent) {
-        val code = e.keyCode
-        val c = codeMap[code]!!
-        arrayDecoder[c] = true
-    }
+         val keyID = e.keyCode
+         val c = when(keyID){
+            87 -> 0
+            65 -> 1
+            83 -> 2
+            68 -> 3
+            else -> null
+        }
+        if(c != null) {
+            arrayDecoder[c] = true
+        }
+         if(keyID == 87 || keyID == 38){
+             uiPos -= 1
+             gp.updateUI = true
+         }
+         else if(keyID == 83 || keyID == 40){
+             uiPos += 1
+             gp.updateUI = true
+         }
+         else if(keyID == 32 || keyID == 10){
+             if(gp.gameState == 0) {
+                 gp.selectHighlight()
+             }
+             else if(gp.gameState == 1){
+                 gp.playerDash()
+             }
+         }
+     }
+
 
      override fun keyReleased(e: KeyEvent) {
-        val code = e.keyCode
-        val c : Int = codeMap[code]!!
-        arrayDecoder[c] = false
+         val c : Int? = when(e.keyCode){
+            87 -> 0
+            65 -> 1
+            83 -> 2
+            68 -> 3
+            else -> null
+        }
+        if(c != null) {
+            arrayDecoder[c] = false
+        }
     }
 }

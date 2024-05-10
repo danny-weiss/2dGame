@@ -2,18 +2,20 @@ package entity
 import main.GamePanel
 import main.KeyHandler
 import main.TileManager
+import main.MonsterHandler
 
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
-import javax.imageio.ImageIO
 
 class Player(private var gp: GamePanel, private var keyH: KeyHandler, private var tm: TileManager) : Entity() {
-
+    override var wantedDir = 0
     override var animList: List<String> = listOf("playChar0", "playChar1", "playChar2", "playChar3")
-    private var yTilePos = 0
-    private var xTilePos = 0
-    var tileX: Array<Int> = arrayOf(0 , 1)
-    var tileY: Array<Int> = arrayOf(7, 8)
+    var tileX = mutableListOf(0 , 1)
+    var tileY = mutableListOf(7, 8)
+    private val dashSize = 3
+    var dash = false
+    private var dashedPixels = 0
+    private var latestMovement = 0
     override var source = "player"
     init {
         setDefaultValues()
@@ -24,75 +26,129 @@ class Player(private var gp: GamePanel, private var keyH: KeyHandler, private va
                 imageList[i] = ImageIO.read(javaClass.classLoader.getResourceAsStream("player/${this.animList[i]}.png"))
             }
         }*/
-     private fun setDefaultValues(){
+      fun setDefaultValues(){
         x = 0
-        y = 432-48
+        y = 432-gp.tileSize
+        yTilePos = 0
+        xTilePos = 0
+        tileX = mutableListOf(0 , 1)
+        tileY = mutableListOf(7, 8)
+        dash = false
+        dashedPixels = 0
+        latestMovement = 0
         speed = 4
+    }
+    private fun checkDash(dashBoost: Int){
+        if(dash) {
+            dashedPixels += speed * dashBoost
+            if(dashedPixels >= dashSize * gp.tileSize){
+                dash = false
+                dashedPixels = 0
+            }
+        }
     }
 
      fun update() {
+        val dashBoost = if(dash){gp.tileSize / 8} else { 1 }
         if (keyH.arrayDecoder[0]) {
-            yTilePos += speed
-            if (yTilePos >= 16 * 3){
-                yTilePos -= speed
+            yTilePos += speed * dashBoost
+            if (yTilePos > gp.tileSize){
                 if (tm.changeTile(-1, "y", tileY, tileX)){
                     tileY[1] -= 1
                     tileY[0] -= 1
-                    y -= speed
-                    yTilePos = 0
+                    y -= speed * dashBoost
+                    checkDash(dashBoost)
+                    yTilePos %= gp.tileSize
+                    latestMovement = 3
+                }
+                else{
+                    yTilePos -= speed * dashBoost
+                    dash = false
                 }
             }
             else{
-                y -= speed
+                y -= speed * dashBoost
+                checkDash(dashBoost)
+                latestMovement = 3
             }
         } else if (keyH.arrayDecoder[2]) {
-            yTilePos -= speed
-            if (yTilePos <= 0){
-                yTilePos += speed
+            yTilePos -= speed * dashBoost
+            if (yTilePos < 0){
                 if (tm.changeTile(1, "y", tileY, tileX)){
                     tileY[1] += 1
                     tileY[0] += 1
-                    y += speed
-                    yTilePos = gp.tileSize
+                    y += speed * dashBoost
+                    checkDash(dashBoost)
+                    yTilePos += gp.tileSize
+                    latestMovement = 2
+                }
+                else{
+                    dash = false
+                    yTilePos += speed * dashBoost
                 }
             }
             else{
-                y += speed
+                y += speed * dashBoost
+                checkDash(dashBoost)
+                latestMovement = 2
             }
         } else if (keyH.arrayDecoder[1]) {
-            xTilePos -= speed
-            if (xTilePos <= 0) {
-                xTilePos += speed
+            xTilePos -= speed * dashBoost
+            if (xTilePos < 0) {
                 if (tm.changeTile(-1, "x", tileY, tileX)) {
                     tileX[1] -= 1
                     tileX[0] -= 1
-                    x -= speed
-                    xTilePos = 48
+                    x -= speed * dashBoost
+                    checkDash(dashBoost)
+                    xTilePos += gp.tileSize
+                    latestMovement = 1
+                }
+                else{
+                    dash = false
+                    xTilePos += speed * dashBoost
                 }
             }
             else{
-                x -= speed
+                x -= speed * dashBoost
+                checkDash(dashBoost)
+                latestMovement = 1
             }
         } else if (keyH.arrayDecoder[3]) {
-            xTilePos += speed
-            if (xTilePos >= 48) {
-                xTilePos -= speed
+            xTilePos += speed * dashBoost
+            if (xTilePos > gp.tileSize) {
                 if (tm.changeTile(1, "x", tileY, tileX)) {
                     tileX[1] += 1
                     tileX[0] += 1
-                    x += speed
-                    xTilePos = 0
+                    x += speed * dashBoost
+                    checkDash(dashBoost)
+                    xTilePos %= 48
+                    latestMovement = 0
+                }
+                else{
+                    dash = false
+                    xTilePos -= speed * dashBoost
                 }
             }
             else {
-                x += speed
+                x += speed * dashBoost
+                latestMovement = 0
             }
         }
-
+        else if(dash){
+            checkDash(dashBoost*2)
+        }
     }
-    fun draw(g2: Graphics2D){
+    override fun draw(g2: Graphics2D){
         val image: BufferedImage = imageList[gp.animCount]!!
         g2.drawImage(image,x, y, gp.tileSize, gp.tileSize, null)
+    }
+
+    override fun move(index: Int, monsterHandler: MonsterHandler) {
+        TODO("Not yet implemented")
+    }
+
+    override fun checkSpeed(monsterNumber: Int, initialMonsterNumber: Int) {
+        TODO("Not yet implemented")
     }
 }
 

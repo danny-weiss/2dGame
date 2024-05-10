@@ -3,17 +3,19 @@ package main
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.lang.IndexOutOfBoundsException
+import java.util.List.copyOf
 import javax.imageio.ImageIO
 import kotlin.math.abs
 
 class TileManager(private var gp: GamePanel) {
     var maxScreenCol = 32
     var maxScreenRow = 18
+    private lateinit var gameMatrix: List<List<Int>>
     private var listImage: Array<BufferedImage?> = arrayOf(null, null, null)
     private var imageList = listOf("rt", "gt", "st")
     var validSpawnPoints = mutableListOf<List<Int>>()
-    var gameMatrix = Array(maxScreenCol) { Array(maxScreenRow - 1){0} }
-    var nodeMatrix = Array(maxScreenCol) { Array(maxScreenRow - 1){1} } // This is used for new nodes to check if they're far away enough from old ones
+    var validMatrix = List(maxScreenCol) { MutableList(maxScreenRow - 1){0} }
+//    private var nodeMatrix = Array(maxScreenCol) { Array(maxScreenRow - 1){1} } // This is used for new nodes to check if they're far away enough from old ones
     private val validXRange = 0..31
     private val validYRange = 0..16
     init {
@@ -21,7 +23,7 @@ class TileManager(private var gp: GamePanel) {
         initGameMatrix()
 
     }
-     fun changeTile(change: Int, tileDirection : String, tileY: Array<Int>, tileX: Array<Int>): Boolean{
+     fun changeTile(change: Int, tileDirection : String, tileY: List<Int>, tileX: List<Int>): Boolean{
         var tilesValue = 0
         val index = (change +1) / 2
         for (i in 0..1){
@@ -40,7 +42,9 @@ class TileManager(private var gp: GamePanel) {
         return tilesValue == 2
     }
 
-    private fun initGameMatrix(){
+     fun initGameMatrix(){
+         val nodeMatrix = Array(maxScreenCol) { Array(maxScreenRow - 1){1} }
+         validMatrix = List(maxScreenCol) { MutableList(maxScreenRow - 1){0} }
 /*        for (i in 0 until maxScreenCol) {
             for (j in 0 until maxScreenRow -1) {
                 gameMatrix[i][j] = 0
@@ -71,22 +75,27 @@ class TileManager(private var gp: GamePanel) {
         }*/
         for(i in 0 until 3){ // sets a cube and outline
             for(j in 7 until 10) {
-                gameMatrix[i][j] = 1
+                validMatrix[i][j] = 1
             }
         }
         for(i in 0 until maxScreenCol){
             for(j in maxScreenRow-3 until maxScreenRow-1){
-                gameMatrix[i][j] = 1
+                validMatrix[i][j] = 1
             }
         }
         for(i in 0 until maxScreenCol){
             for(j in 0 until 2){
-                gameMatrix[i][j] = 1
+                validMatrix[i][j] = 1
             }
         }
         for(i in 0 until maxScreenRow - 1){
             for(j in 0 until 2){
-                gameMatrix[i][j] = 1
+                validMatrix[i][j] = 1
+            }
+        }
+        for(i in 0 until 2){
+            for(j in 0 until maxScreenRow - 1){
+                validMatrix[i][j] = 1
             }
         }
         var xCord: Int
@@ -124,7 +133,7 @@ class TileManager(private var gp: GamePanel) {
                     }
                     if (isValid(xCord, yCord)) {
                         coinFlip = (0..6).random()
-                        if (gameMatrix[xCord][yCord + posCorr] == 0 && coinFlip != 1) {
+                        if (validMatrix[xCord][yCord + posCorr] == 0 && coinFlip != 1) {
                             boundDistance = abs(currentDim - boundList[j])
                             dice1 = (5..7).random()
                             dice2 = (5..7).random()
@@ -141,13 +150,11 @@ class TileManager(private var gp: GamePanel) {
                                     -1
                                 }
                                 for (k in 0..lineLength) {
-                                    if (gameMatrix[currentNodes[i][0] + currentPos][currentNodes[i][1]] == 0 && gameMatrix[currentNodes[i][0] + currentPos][currentNodes[i][1] + twinLinePos] == 0) {
-                                        gameMatrix[currentNodes[i][0] + currentPos][currentNodes[i][1]] = 1
-                                        gameMatrix[currentNodes[i][0] + currentPos][currentNodes[i][1] + twinLinePos] =
-                                            1
+                                    if (validMatrix[currentNodes[i][0] + currentPos][currentNodes[i][1]] == 0 && validMatrix[currentNodes[i][0] + currentPos][currentNodes[i][1] + twinLinePos] == 0) {
+                                        validMatrix[currentNodes[i][0] + currentPos][currentNodes[i][1]] = 1
+                                        validMatrix[currentNodes[i][0] + currentPos][currentNodes[i][1] + twinLinePos] = 1
                                         currentPos += vectorList[j][0]
                                     } else {
-
                                         break
                                     }
                                 }
@@ -161,10 +168,9 @@ class TileManager(private var gp: GamePanel) {
                                 }
                                 for (k in 0..lineLength) {
                                     currentPos += vectorList[j][1]
-                                    if (gameMatrix[currentNodes[i][0]][currentNodes[i][1] + currentPos] == 0) {
-                                        gameMatrix[currentNodes[i][0]][currentNodes[i][1] + currentPos] = 1
-                                        gameMatrix[currentNodes[i][0] + twinLinePos][currentNodes[i][1] + currentPos] =
-                                            1
+                                    if (validMatrix[currentNodes[i][0]][currentNodes[i][1] + currentPos] == 0) {
+                                        validMatrix[currentNodes[i][0]][currentNodes[i][1] + currentPos] = 1
+                                        validMatrix[currentNodes[i][0] + twinLinePos][currentNodes[i][1] + currentPos] = 1
                                     } else {
                                         break
                                     }
@@ -205,13 +211,14 @@ class TileManager(private var gp: GamePanel) {
             }
             println("")
         }*/
-        for(i in gameMatrix.indices){
-            for(j in gameMatrix[i].indices){
-                if(gameMatrix[i][j] == 1){
+        for(i in validMatrix.indices){
+            for(j in validMatrix[i].indices){
+                if(validMatrix[i][j] == 1){
                     validSpawnPoints.add(listOf(i, j))
                 }
             }
         }
+        gameMatrix = copyOf(validMatrix.toList())
     }
     private fun isValid(xCord:Int, yCord:Int): Boolean{
         return validXRange.contains(xCord) && validYRange.contains(yCord)
@@ -220,11 +227,7 @@ class TileManager(private var gp: GamePanel) {
         var image:BufferedImage?
         for(i in gameMatrix.indices){
             for (j in gameMatrix[i].indices){
-                image = if(nodeMatrix[i][j] != 2) {
-                    listImage[gameMatrix[i][j]]
-                }else{
-                    listImage[2]
-                }
+                image = listImage[gameMatrix[i][j]]
                 matrixG2.drawImage(image, i  * gp.tileSize, j * gp.tileSize , gp.tileSize, gp.tileSize, null)
             }
         }
