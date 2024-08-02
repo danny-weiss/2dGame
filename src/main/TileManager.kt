@@ -6,6 +6,7 @@ import java.lang.IndexOutOfBoundsException
 import java.util.List.copyOf
 import javax.imageio.ImageIO
 import kotlin.math.abs
+import kotlin.random.Random
 
 class TileManager(private var gp: GamePanel) {
     var maxScreenCol = 32
@@ -222,6 +223,10 @@ class TileManager(private var gp: GamePanel) {
     }
     private fun isValid(xCord:Int, yCord:Int): Boolean{
         return validXRange.contains(xCord) && validYRange.contains(yCord)
+    }
+    fun randomValidTile(): List<Int> {
+        val index = Random.nextInt(validSpawnPoints.size)
+        return listOf(validSpawnPoints[index][0], validSpawnPoints[index][1])
     }
     fun drawMatrix(matrixG2: Graphics2D){
         var image:BufferedImage?

@@ -92,7 +92,6 @@ class GamePanel : JPanel(), Runnable {
             if (currentTime - lastTime >= drawInterval) {
                 timer += (currentTime - lastTime)
                 lastTime = System.nanoTime()
-                update()
                 if(gameState == 1) {
                     drawToScreen()
                     drawToTempScreen()
@@ -101,6 +100,7 @@ class GamePanel : JPanel(), Runnable {
                     gui.drawTitle(currentTitle)
                     updateUI = false
                 }
+                update()
                 if (drawCount % 10 == 0) {
                     if (animCount + 1 == 4) {
                         animCount = 0
@@ -118,6 +118,9 @@ class GamePanel : JPanel(), Runnable {
                 drawCount = 0
                 winClockHandler()
                 timeSeconds +=1
+                if(timeSeconds % 5 == 0){
+                    monsterHandler.wanderTick()
+                }
                 timer = 0
             }
         }
@@ -156,8 +159,9 @@ class GamePanel : JPanel(), Runnable {
 
     }
     fun playerDash(){
-        if(lastDashTime < timeSeconds - 2) {
+        if(lastDashTime < timeSeconds - 1) {
             player.dash = true
+            lastDashTime = timeSeconds
         }
     }
     private fun newGame(){

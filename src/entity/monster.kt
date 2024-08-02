@@ -11,8 +11,8 @@ abstract class Monster(val p: Player, private val tm: TileManager, val gp: GameP
     private var originalTile = mutableListOf(0, 0)
     private var previousTile = listOf(0, 0)
     private var inertia = 0
-    var walkState = 0 //Default player chasing state
-    lateinit var aimedTile: List<Int>
+    private var walkState = 0 //Default player chasing state
+    private lateinit var aimedTile: List<Int>
     override var wantedDir = 0
     private fun isValid(tileX: Int, tileY: Int, previousTile:List<Int>):Boolean{
         return if(validXRange.contains(tileX) && validYRange.contains(tileY) && (tileX != previousTile[0] || tileY != previousTile[1])){
@@ -20,6 +20,13 @@ abstract class Monster(val p: Player, private val tm: TileManager, val gp: GameP
         }else{
             false
         }
+    }
+    fun stopWander(){
+        walkState = 0
+    }
+    fun beginWander(){
+        walkState = 1
+        aimedTile = tm.randomValidTile()
     }
     private fun  closePathfind(): Int{
         var xh: Int
@@ -39,7 +46,11 @@ abstract class Monster(val p: Player, private val tm: TileManager, val gp: GameP
         return minIndex
     }
     override fun pathfind() {
-        val aimedTilesList = listOf(p.tileX[0], p.tileY[0])
+        val aimedTilesList: List<Int> = if(walkState == 0) {
+            listOf(p.tileX[0], p.tileY[0])
+        } else{
+            aimedTile
+        }
         val xDirectionList = arrayOf(eTileX + 1, eTileX - 1, eTileX, eTileX)
         val yDirectionList = arrayOf(eTileY, eTileY, eTileY + 1, eTileY - 1)
         val hList: ArrayList<Int> = arrayListOf(0, 0, 0, 0)
