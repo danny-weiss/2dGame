@@ -1,3 +1,2 @@
-"# 2dGame" 
-"# 2dGame" 
-"# 2dGame" 
+Jeu basique en 2D que j'ai fait en 2023/2024(14 ans). Fait en Kotlin qui est un langage fait pour être comme Java mais avec une syntaxe plus courte et plus simple.
+Le jeu consiste à tuer des ennemis qui te suivent dans un environnement 2D un peu comme pac-man.
